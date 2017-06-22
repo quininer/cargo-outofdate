@@ -11,6 +11,7 @@ pub fn query_latest(registry: &mut PackageRegistry, package: &PackageId)
 {
     let dep = Dependency::new_override(package.name(), package.source_id());
     let results = registry.query(&dep)?;
+    let package_version = VersionReq::parse(&package.version().to_string())?;
 
     let latest = results.iter()
         .max_by_key(|summary| summary.version())
@@ -20,7 +21,7 @@ pub fn query_latest(registry: &mut PackageRegistry, package: &PackageId)
         )
         .cloned();
     let compatible_latest = results.iter()
-        .filter(|summary| VersionReq::exact(package.version()).matches(summary.version()))
+        .filter(|summary| package_version.matches(summary.version()))
         .max_by_key(|summary| summary.version())
         .and_then(|summary|
             if summary.version() > package.version() { Some(summary) }
