@@ -45,9 +45,10 @@ fn start(config: Config) -> CargoResult<()> {
     let (_, resolve) = ops::resolve_ws(&workspace)?;
 
     let mut tw = TabWriter::new(vec!());
+    writeln!(&mut tw, "Name\tNow\tCompat\tLatest")?;
 
     for package in resolve.iter() {
-        let (compat_latest, latest) = query_latest(&mut registry, &package)?;
+        let (compat_latest, latest) = query_latest(&mut registry, package)?;
         if compat_latest.is_none() && latest.is_none() {
             continue
         }
