@@ -11,7 +11,7 @@ $ cargo install cargo-outofdate
 ## usage
 
 ```
-$ cargo outofdate
+$ cargo-outofdate
 Name                   Now     Compat  Latest
 chrono:                0.2.25  --      0.4.0
 serde_json:            0.9.10  --      1.0.2

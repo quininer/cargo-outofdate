@@ -1,3 +1,5 @@
+#![feature(attr_literals)]
+
 #[macro_use] extern crate structopt_derive;
 extern crate structopt;
 
@@ -23,10 +25,14 @@ use query::query_latest;
 
 #[derive(StructOpt)]
 #[structopt]
-pub struct Config {
+struct Config {
     /// manifest path
     #[structopt(short = "m", long = "manifest")]
-    manifest: Option<String>
+    manifest: Option<String>,
+
+    #[structopt(hidden = true)]
+    #[doc(hidden)]
+    _ignore: Option<String>
 }
 
 
