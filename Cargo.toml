@@ -1,0 +1,12 @@
+[package]
+name = "cargo-outofdate"
+version = "0.1.0"
+authors = ["quininer kel <quininer@live.com>"]
+
+[dependencies]
+structopt = "0.0.5"
+structopt-derive = "0.0.5"
+
+cargo = "0.19"
+semver = "0.6"
+tabwriter = "*"
