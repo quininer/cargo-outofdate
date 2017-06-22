@@ -23,6 +23,8 @@ use structopt::StructOpt;
 use query::query_latest;
 
 
+const EMPTY_VERSION: Cow<'static, str> = Cow::Borrowed("--");
+
 #[derive(StructOpt)]
 #[structopt]
 struct Config {
@@ -30,6 +32,11 @@ struct Config {
     #[structopt(short = "m", long = "manifest")]
     manifest: Option<String>,
 
+    /// only check root dependencies
+    #[structopt(short = "R", long = "only-root")]
+    only_root: bool,
+
+    /// TODO https://github.com/TeXitoi/structopt/issues/1
     #[structopt(hidden = true)]
     #[doc(hidden)]
     _ignore: Option<String>
@@ -38,8 +45,6 @@ struct Config {
 
 #[inline]
 fn start(config: Config) -> CargoResult<()> {
-    const EMPTY_VERSION: Cow<'static, str> = Cow::Borrowed("--");
-
     let cargo_config = CargoConfig::default()?;
     let workspace = if let Some(ref manifest) = config.manifest {
         Workspace::new(&Path::new(manifest).canonicalize()?, &cargo_config)?
@@ -49,19 +54,30 @@ fn start(config: Config) -> CargoResult<()> {
     };
     let mut registry = PackageRegistry::new(&cargo_config)?;
     let (_, resolve) = ops::resolve_ws(&workspace)?;
+    let package = workspace.current()?;
 
+    let mut yay = false;
     let mut tw = TabWriter::new(vec!());
     writeln!(&mut tw, "Name\tNow\tCompat\tLatest")?;
 
-    for package in resolve.iter() {
-        let (compat_latest, latest) = query_latest(&mut registry, package)?;
+    for pkg in resolve.iter() {
+        if config.only_root {
+            if !package.dependencies()
+                .iter()
+                .any(|dep| dep.matches_id(pkg))
+            {
+                continue
+            }
+        }
+
+        let (compat_latest, latest) = query_latest(&mut registry, pkg)?;
         if compat_latest.is_none() && latest.is_none() {
             continue
         }
 
         writeln!(&mut tw, "{}:\t{}\t{}\t{}",
-            package.name(),
-            package.version(),
+            pkg.name(),
+            pkg.version(),
             compat_latest
                 .map(|s| s.version().to_string())
                 .map(Cow::Owned)
@@ -71,11 +87,19 @@ fn start(config: Config) -> CargoResult<()> {
                 .map(Cow::Owned)
                 .unwrap_or(EMPTY_VERSION)
         )?;
+
+        yay = true;
     }
 
-    io::stdout().write_all(&tw.into_inner()
-        .map_err(|err| io::Error::new(err.error().kind(), err.to_string()))?
-    )?;
+    if yay {
+        io::stdout().write_all(&tw.into_inner()
+            .map_err(|err| io::Error::new(err.error().kind(), err.to_string()))?
+        )?;
+    } else {
+        cargo_config
+            .shell()
+            .say("All dependencies are up to date, yay!", 0)?;
+    }
 
     Ok(())
 }
