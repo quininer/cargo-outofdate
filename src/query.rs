@@ -13,19 +13,23 @@ pub fn query_latest(registry: &mut PackageRegistry, package: &PackageId)
     let results = registry.query(&dep)?;
     let package_version = VersionReq::parse(&package.version().to_string())?;
 
-    let latest = results.iter()
-        .max_by_key(|summary| summary.version())
-        .and_then(|summary|
-            if summary.version() > package.version() { Some(summary) }
-            else { None }
-        )
-        .cloned();
     let compatible_latest = results.iter()
         .filter(|summary| package_version.matches(summary.version()))
         .max_by_key(|summary| summary.version())
         .and_then(|summary|
             if summary.version() > package.version() { Some(summary) }
             else { None }
+        )
+        .cloned();
+    let latest = results.iter()
+        .max_by_key(|summary| summary.version())
+        .and_then(|summary|
+            if summary.version() > package.version() { Some(summary) }
+            else { None }
+        )
+        .and_then(|summary|
+            if Some(summary) == compatible_latest.as_ref() { None }
+            else { Some(summary) }
         )
         .cloned();
 
