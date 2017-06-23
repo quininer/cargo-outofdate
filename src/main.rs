@@ -14,6 +14,7 @@ use std::borrow::Cow;
 use std::io::{ self, Write };
 use cargo::ops;
 use cargo::core::Workspace;
+use cargo::core::SourceId;
 use cargo::core::registry::PackageRegistry;
 use cargo::util::Config as CargoConfig;
 use cargo::util::errors::CargoResult;
@@ -36,6 +37,10 @@ struct Options {
     #[structopt(short = "R", long = "only-root")]
     only_root: bool,
 
+    /// update crates-io
+    #[structopt(short = "U", long = "update-crates-io")]
+    update_crates_io: bool,
+
     /// TODO https://github.com/TeXitoi/structopt/issues/1
     #[structopt(hidden = true)]
     #[doc(hidden)]
@@ -55,6 +60,12 @@ fn start(options: Options) -> CargoResult<()> {
     let mut registry = PackageRegistry::new(&config)?;
     let (_, resolve) = ops::resolve_ws(&workspace)?;
     let package = workspace.current()?;
+
+    if options.update_crates_io {
+        SourceId::crates_io(&config)?
+            .load(&config)
+            .update()?;
+    }
 
     let mut results = Vec::new();
 
