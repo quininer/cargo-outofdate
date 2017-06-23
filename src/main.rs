@@ -27,7 +27,7 @@ const EMPTY_VERSION: Cow<'static, str> = Cow::Borrowed("--");
 
 #[derive(StructOpt)]
 #[structopt]
-struct Config {
+struct Options {
     /// manifest path
     #[structopt(short = "m", long = "manifest")]
     manifest: Option<String>,
@@ -44,30 +44,26 @@ struct Config {
 
 
 #[inline]
-fn start(config: Config) -> CargoResult<()> {
-    let cargo_config = CargoConfig::default()?;
-    let workspace = if let Some(ref manifest) = config.manifest {
-        Workspace::new(&Path::new(manifest).canonicalize()?, &cargo_config)?
+fn start(options: Options) -> CargoResult<()> {
+    let config = CargoConfig::default()?;
+    let workspace = if let Some(ref manifest) = options.manifest {
+        Workspace::new(&Path::new(manifest).canonicalize()?, &config)?
     } else {
-        let root = find_root_manifest_for_wd(config.manifest, cargo_config.cwd())?;
-        Workspace::new(&root, &cargo_config)?
+        let root = find_root_manifest_for_wd(options.manifest, config.cwd())?;
+        Workspace::new(&root, &config)?
     };
-    let mut registry = PackageRegistry::new(&cargo_config)?;
+    let mut registry = PackageRegistry::new(&config)?;
     let (_, resolve) = ops::resolve_ws(&workspace)?;
     let package = workspace.current()?;
 
-    let mut yay = false;
-    let mut tw = TabWriter::new(vec!());
-    writeln!(&mut tw, "Name\tNow\tCompat\tLatest")?;
+    let mut results = Vec::new();
 
     for pkg in resolve.iter() {
-        if config.only_root {
-            if !package.dependencies()
-                .iter()
-                .any(|dep| dep.matches_id(pkg))
-            {
-                continue
-            }
+        if options.only_root && !package.dependencies()
+            .iter()
+            .any(|dep| dep.matches_id(pkg))
+        {
+            continue
         }
 
         let (compat_latest, latest) = query_latest(&mut registry, pkg)?;
@@ -75,36 +71,42 @@ fn start(config: Config) -> CargoResult<()> {
             continue
         }
 
-        writeln!(&mut tw, "{}:\t{}\t{}\t{}",
-            pkg.name(),
-            pkg.version(),
-            compat_latest
-                .map(|s| s.version().to_string())
-                .map(Cow::Owned)
-                .unwrap_or(EMPTY_VERSION),
-            latest
-                .map(|s| s.version().to_string())
-                .map(Cow::Owned)
-                .unwrap_or(EMPTY_VERSION)
-        )?;
-
-        yay = true;
+        results.push((pkg, compat_latest, latest));
     }
 
-    if yay {
+    if results.is_empty() {
+        config.shell()
+            .say("All dependencies are up to date, yay!", 0)?;
+    } else {
+        results.sort_by_key(|&(pkg, _, _)| pkg.name());
+
+        let mut tw = TabWriter::new(vec!());
+        writeln!(&mut tw, "Name\tNow\tCompat\tLatest")?;
+
+        for (pkg, compat_latest, latest) in results {
+            writeln!(&mut tw, "{}:\t{}\t{}\t{}",
+                pkg.name(),
+                pkg.version(),
+                compat_latest
+                    .map(|s| s.version().to_string())
+                    .map(Cow::Owned)
+                    .unwrap_or(EMPTY_VERSION),
+                latest
+                    .map(|s| s.version().to_string())
+                    .map(Cow::Owned)
+                    .unwrap_or(EMPTY_VERSION)
+            )?;
+        }
+
         io::stdout().write_all(&tw.into_inner()
             .map_err(|err| io::Error::new(err.error().kind(), err.to_string()))?
         )?;
-    } else {
-        cargo_config
-            .shell()
-            .say("All dependencies are up to date, yay!", 0)?;
     }
 
     Ok(())
 }
 
 fn main() {
-    let config = Config::from_args();
-    start(config).unwrap();
+    let options = Options::from_args();
+    start(options).unwrap();
 }

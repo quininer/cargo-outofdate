@@ -1,6 +1,6 @@
 [package]
 name = "cargo-outofdate"
-version = "0.1.0"
+version = "0.2.0"
 authors = ["quininer kel <quininer@live.com>"]
 license = "MIT"
 description = "Check outdated cargo dependencies"

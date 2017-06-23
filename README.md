@@ -11,7 +11,7 @@ $ cargo install cargo-outofdate
 ## usage
 
 ```
-$ cargo-outofdate
+$ cargo outofdate
 Name                   Now     Compat  Latest
 unicode-xid:           0.0.4   --      0.1.0
 chrono:                0.2.25  --      0.4.0
