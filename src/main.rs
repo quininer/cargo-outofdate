@@ -89,7 +89,7 @@ fn start(options: Options) -> CargoResult<()> {
         config.shell()
             .say("All dependencies are up to date, yay!", 0)?;
     } else {
-        results.sort_by_key(|&(pkg, _, _)| pkg.name());
+        results.sort_by_key(|&(pkg, _, _)| pkg);
 
         let mut tw = TabWriter::new(vec!());
         writeln!(&mut tw, "Name\tNow\tCompat\tLatest")?;
