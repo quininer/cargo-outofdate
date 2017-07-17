@@ -41,10 +41,15 @@ struct Options {
     #[structopt(short = "U", long = "update-crates-io")]
     update_crates_io: bool,
 
-    /// TODO https://github.com/TeXitoi/structopt/issues/1
-    #[structopt(hidden = true)]
+    #[structopt(subcommand)]
     #[doc(hidden)]
-    _ignore: Option<String>
+    _subcommand: Option<Command>
+}
+
+#[derive(StructOpt)]
+enum Command {
+    #[structopt(name = "outofdate")]
+    Outofdate
 }
 
 
