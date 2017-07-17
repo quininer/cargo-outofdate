@@ -41,15 +41,9 @@ struct Options {
     #[structopt(short = "U", long = "update-crates-io")]
     update_crates_io: bool,
 
-    #[structopt(subcommand)]
+    #[structopt(hidden = true)]
     #[doc(hidden)]
-    _subcommand: Option<Command>
-}
-
-#[derive(StructOpt)]
-enum Command {
-    #[structopt(name = "outofdate")]
-    Outofdate
+    _ignore: Option<String>
 }
 
 
