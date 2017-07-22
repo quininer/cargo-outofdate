@@ -10,7 +10,7 @@ pub fn query_latest(registry: &mut PackageRegistry, package: &PackageId)
     -> CargoResult<(Option<Summary>, Option<Summary>)>
 {
     let dep = Dependency::new_override(package.name(), package.source_id());
-    let results = registry.query(&dep)?;
+    let results = registry.query_vec(&dep)?;
     let package_version = VersionReq::parse(&package.version().to_string())?;
 
     let compatible_latest = results.iter()
