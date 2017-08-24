@@ -1,6 +1,6 @@
 # cargo-outofdate
 
-Check outdated cargo dependencies, Inspired by [cargo-outdated](https://github.com/kbknapp/cargo-outdated).
+deprecated by [cargo-outdated](https://github.com/kbknapp/cargo-outdated/pull/51).
 
 ## install
 
