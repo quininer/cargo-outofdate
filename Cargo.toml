@@ -11,11 +11,11 @@ keywords = ["cargo", "dependencies", "cargo-subcommand"]
 categories = ["command-line-utilities", "development-tools"]
 
 [dependencies]
-structopt = "0.1"
-structopt-derive = "0.1"
+structopt = "0.2"
+structopt-derive = "0.2"
 
-cargo = "0.20"
-semver = "0.7"
+cargo = "0.32"
+semver = "0.9"
 tabwriter = "1.0"
 
 [profile.release]

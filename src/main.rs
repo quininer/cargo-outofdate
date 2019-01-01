@@ -1,5 +1,3 @@
-#![feature(attr_literals)]
-
 #[macro_use] extern crate structopt_derive;
 extern crate structopt;
 
@@ -27,7 +25,6 @@ use query::query_latest;
 const EMPTY_VERSION: Cow<'static, str> = Cow::Borrowed("--");
 
 #[derive(StructOpt)]
-#[structopt]
 struct Options {
     /// manifest path
     #[structopt(short = "m", long = "manifest")]
@@ -53,16 +50,17 @@ fn start(options: Options) -> CargoResult<()> {
     let workspace = if let Some(ref manifest) = options.manifest {
         Workspace::new(&Path::new(manifest).canonicalize()?, &config)?
     } else {
-        let root = find_root_manifest_for_wd(options.manifest, config.cwd())?;
+        let root = find_root_manifest_for_wd(config.cwd())?;
         Workspace::new(&root, &config)?
     };
     let mut registry = PackageRegistry::new(&config)?;
+    registry.lock_patches();
     let (_, resolve) = ops::resolve_ws(&workspace)?;
     let package = workspace.current()?;
 
     if options.update_crates_io {
         SourceId::crates_io(&config)?
-            .load(&config)
+            .load(&config)?
             .update()?;
     }
 
@@ -86,7 +84,7 @@ fn start(options: Options) -> CargoResult<()> {
 
     if results.is_empty() {
         config.shell()
-            .say("All dependencies are up to date, yay!", 0)?;
+            .status("Ok", "All dependencies are up to date, yay!")?;
     } else {
         results.sort_by_key(|&(pkg, _, _)| pkg);
 
