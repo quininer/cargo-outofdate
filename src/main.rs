@@ -1,10 +1,3 @@
-#[macro_use] extern crate structopt_derive;
-extern crate structopt;
-
-extern crate cargo;
-extern crate semver;
-extern crate tabwriter;
-
 mod query;
 
 use std::path::Path;
@@ -34,9 +27,9 @@ struct Options {
     #[structopt(short = "R", long = "only-root")]
     only_root: bool,
 
-    /// update crates-io
-    #[structopt(short = "U", long = "update-crates-io")]
-    update_crates_io: bool,
+    /// Run without update crates-io
+    #[structopt(long)]
+    offline: bool,
 
     #[structopt(hidden = true)]
     #[doc(hidden)]
@@ -47,20 +40,24 @@ struct Options {
 #[inline]
 fn start(options: Options) -> CargoResult<()> {
     let config = CargoConfig::default()?;
+    let _guard = config.acquire_package_cache_lock()?;
+
     let workspace = if let Some(ref manifest) = options.manifest {
         Workspace::new(&Path::new(manifest).canonicalize()?, &config)?
     } else {
         let root = find_root_manifest_for_wd(config.cwd())?;
         Workspace::new(&root, &config)?
     };
+
     let mut registry = PackageRegistry::new(&config)?;
     registry.lock_patches();
+
     let (_, resolve) = ops::resolve_ws(&workspace)?;
     let package = workspace.current()?;
 
-    if options.update_crates_io {
+    if !options.offline {
         SourceId::crates_io(&config)?
-            .load(&config)?
+            .load(&config, &Default::default())?
             .update()?;
     }
 
@@ -74,7 +71,7 @@ fn start(options: Options) -> CargoResult<()> {
             continue
         }
 
-        let (compat_latest, latest) = query_latest(&mut registry, pkg)?;
+        let (compat_latest, latest) = query_latest(&mut registry, &pkg)?;
         if compat_latest.is_none() && latest.is_none() {
             continue
         }
