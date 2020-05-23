@@ -53,7 +53,6 @@ fn start(options: Options) -> CargoResult<()> {
     registry.lock_patches();
 
     let (_, resolve) = ops::resolve_ws(&workspace)?;
-    let package = workspace.current()?;
 
     if !options.offline {
         SourceId::crates_io(&config)?
@@ -61,22 +60,32 @@ fn start(options: Options) -> CargoResult<()> {
             .update()?;
     }
 
+    let packages = if options.only_root {
+        Some(workspace
+            .members()
+            .collect::<Vec<_>>())
+    } else {
+        None
+    };
+
     let mut results = Vec::new();
 
     for pkg in resolve.iter() {
-        if options.only_root && !package.dependencies()
-            .iter()
-            .any(|dep| dep.matches_id(pkg))
-        {
-            continue
+        if let Some(packages) = packages.as_ref() {
+            if !packages.iter()
+                .map(|dep| dep.dependencies())
+                .flatten()
+                .any(|dep| dep.matches_id(pkg))
+            {
+                continue
+            }
         }
 
         let (compat_latest, latest) = query_latest(&mut registry, &pkg)?;
-        if compat_latest.is_none() && latest.is_none() {
-            continue
-        }
 
-        results.push((pkg, compat_latest, latest));
+        if compat_latest.is_some() || latest.is_some() {
+            results.push((pkg, compat_latest, latest));
+        }
     }
 
     if results.is_empty() {
@@ -85,7 +94,7 @@ fn start(options: Options) -> CargoResult<()> {
     } else {
         results.sort_by_key(|&(pkg, _, _)| pkg);
 
-        let mut tw = TabWriter::new(vec!());
+        let mut tw = TabWriter::new(Vec::new());
         writeln!(&mut tw, "Name\tNow\tCompat\tLatest")?;
 
         for (pkg, compat_latest, latest) in results {
