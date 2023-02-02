@@ -30,6 +30,9 @@ struct Options {
     /// run without update crates-io
     #[argh(switch)]
     offline: bool,
+
+    #[argh(positional)]
+    _ignore: Option<String>,
 }
 
 
