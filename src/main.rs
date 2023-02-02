@@ -5,41 +5,48 @@ use std::borrow::Cow;
 use std::io::{ self, Write };
 use cargo::ops;
 use cargo::core::Workspace;
-use cargo::core::SourceId;
 use cargo::core::registry::PackageRegistry;
 use cargo::util::Config as CargoConfig;
 use cargo::util::errors::CargoResult;
 use cargo::util::important_paths::find_root_manifest_for_wd;
 use tabwriter::TabWriter;
-use structopt::StructOpt;
+use argh::FromArgs;
 use query::query_latest;
 
 
 const EMPTY_VERSION: Cow<'static, str> = Cow::Borrowed("--");
 
-#[derive(StructOpt)]
+/// cargo outofdate checker
+#[derive(FromArgs)]
 struct Options {
     /// manifest path
-    #[structopt(short = "m", long = "manifest")]
+    #[argh(option, short = 'm')]
     manifest: Option<String>,
 
     /// only check root dependencies
-    #[structopt(short = "R", long = "only-root")]
+    #[argh(switch, short = 'R')]
     only_root: bool,
 
-    /// Run without update crates-io
-    #[structopt(long)]
+    /// run without update crates-io
+    #[argh(switch)]
     offline: bool,
-
-    #[structopt(hidden = true)]
-    #[doc(hidden)]
-    _ignore: Option<String>
 }
 
 
 #[inline]
 fn start(options: Options) -> CargoResult<()> {
-    let config = CargoConfig::default()?;
+    let mut config = CargoConfig::default()?;
+    config.configure(
+        1,
+        false,
+        None,
+        true,
+        true,
+        options.offline,
+        &None,
+        &[ "sparse-registry".into() ],
+        &[]
+    )?;
     let _guard = config.acquire_package_cache_lock()?;
 
     let workspace = if let Some(ref manifest) = options.manifest {
@@ -53,12 +60,6 @@ fn start(options: Options) -> CargoResult<()> {
     registry.lock_patches();
 
     let (_, resolve) = ops::resolve_ws(&workspace)?;
-
-    if !options.offline {
-        SourceId::crates_io(&config)?
-            .load(&config, &Default::default())?
-            .update()?;
-    }
 
     let packages = if options.only_root {
         Some(workspace
@@ -121,6 +122,6 @@ fn start(options: Options) -> CargoResult<()> {
 }
 
 fn main() {
-    let options = Options::from_args();
+    let options = argh::from_env();
     start(options).unwrap();
 }

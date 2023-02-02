@@ -12,9 +12,9 @@ categories = ["command-line-utilities", "development-tools"]
 edition = "2018"
 
 [dependencies]
-structopt = "0.3"
-
-cargo = "0.58"
+anyhow = "1"
+argh = "0.1"
+cargo = "0.68"
 semver = "1"
 tabwriter = "1.0"
 

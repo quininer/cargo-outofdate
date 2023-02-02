@@ -1,7 +1,9 @@
+use std::task::Poll;
 use cargo::core::registry::{ PackageRegistry, Registry };
 use cargo::core::dependency::Dependency;
 use cargo::core::package_id::PackageId;
 use cargo::core::summary::Summary;
+use cargo::core::source::QueryKind;
 use cargo::util::errors::CargoResult;
 use semver::VersionReq;
 
@@ -10,7 +12,11 @@ pub fn query_latest(registry: &mut PackageRegistry, package: &PackageId)
     -> CargoResult<(Option<Summary>, Option<Summary>)>
 {
     let dep = Dependency::new_override(package.name(), package.source_id());
-    let results = registry.query_vec(&dep, false)?;
+    registry.block_until_ready()?;
+    let results = match registry.query_vec(&dep, QueryKind::Exact)? {
+        Poll::Ready(results) => results,
+        Poll::Pending => anyhow::bail!("registry not ready")
+    };
     let package_version = VersionReq::parse(&package.version().to_string())?;
 
     let compatible_latest = results.iter()
