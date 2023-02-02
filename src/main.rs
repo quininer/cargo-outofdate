@@ -43,7 +43,7 @@ fn start(options: Options) -> CargoResult<()> {
         1,
         false,
         None,
-        true,
+        false,
         true,
         options.offline,
         &None,
