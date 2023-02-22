@@ -120,9 +120,7 @@ fn start(options: Options) -> CargoResult<()> {
             )?;
         }
 
-        io::stdout().write_all(&tw.into_inner()
-            .map_err(|err| io::Error::new(err.error().kind(), err.to_string()))?
-        )?;
+        io::stdout().write_all(&tw.into_inner()?)?;
     }
 
     Ok(())

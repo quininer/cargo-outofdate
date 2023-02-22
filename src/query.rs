@@ -23,21 +23,12 @@ pub fn query_latest(registry: &mut PackageRegistry, package: &PackageId)
     let compatible_latest = results.iter()
         .filter(|summary| package_version.matches(summary.version()))
         .max_by_key(|summary| summary.version())
-        .and_then(|summary|
-            if summary.version() > package.version() { Some(summary) }
-            else { None }
-        )
+        .filter(|summary| summary.version() > package.version())
         .cloned();
     let latest = results.iter()
         .max_by_key(|summary| summary.version())
-        .and_then(|summary|
-            if summary.version() > package.version() { Some(summary) }
-            else { None }
-        )
-        .and_then(|summary|
-            if Some(summary) == compatible_latest.as_ref() { None }
-            else { Some(summary) }
-        )
+        .filter(|summary| summary.version() > package.version())
+        .filter(|summary| Some(*summary) != compatible_latest.as_ref())
         .cloned();
 
     Ok((compatible_latest, latest))
