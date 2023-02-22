@@ -52,11 +52,15 @@ fn start(options: Options) -> CargoResult<()> {
     )?;
     let _guard = config.acquire_package_cache_lock()?;
 
-    let workspace = if let Some(ref manifest) = options.manifest {
-        Workspace::new(&Path::new(manifest).canonicalize()?, &config)?
-    } else {
-        let root = find_root_manifest_for_wd(config.cwd())?;
-        Workspace::new(&root, &config)?
+    let workspace = {
+        let manifest_path = if let Some(manifest) = options.manifest.as_ref() {
+            Path::new(manifest).canonicalize()?
+        } else {
+            find_root_manifest_for_wd(config.cwd())?
+        };
+        let workspace = Workspace::new(&manifest_path, &config)?;
+        let pkg = workspace.current()?;
+        Workspace::ephemeral(pkg.clone(), &config, None, true)?
     };
 
     let mut registry = PackageRegistry::new(&config)?;

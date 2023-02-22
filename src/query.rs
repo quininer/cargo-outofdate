@@ -12,10 +12,11 @@ pub fn query_latest(registry: &mut PackageRegistry, package: &PackageId)
     -> CargoResult<(Option<Summary>, Option<Summary>)>
 {
     let dep = Dependency::new_override(package.name(), package.source_id());
-    registry.block_until_ready()?;
-    let results = match registry.query_vec(&dep, QueryKind::Exact)? {
-        Poll::Ready(results) => results,
-        Poll::Pending => anyhow::bail!("registry not ready")
+    let results = loop {
+        match registry.query_vec(&dep, QueryKind::Exact)? {
+            Poll::Ready(results) => break results,
+            Poll::Pending => registry.block_until_ready()?
+        }
     };
     let package_version = VersionReq::parse(&package.version().to_string())?;
 
