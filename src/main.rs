@@ -47,7 +47,7 @@ fn start(options: Options) -> CargoResult<()> {
         true,
         options.offline,
         &None,
-        &[ "sparse-registry".into() ],
+        &[],
         &[]
     )?;
     let _guard = config.acquire_package_cache_lock()?;
