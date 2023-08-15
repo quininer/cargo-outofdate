@@ -58,9 +58,7 @@ fn start(options: Options) -> CargoResult<()> {
         } else {
             find_root_manifest_for_wd(config.cwd())?
         };
-        let workspace = Workspace::new(&manifest_path, &config)?;
-        let pkg = workspace.current()?;
-        Workspace::ephemeral(pkg.clone(), &config, None, true)?
+        Workspace::new(&manifest_path, &config)?
     };
 
     let mut registry = PackageRegistry::new(&config)?;
