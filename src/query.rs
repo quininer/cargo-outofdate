@@ -3,7 +3,7 @@ use cargo::core::registry::{ PackageRegistry, Registry };
 use cargo::core::dependency::Dependency;
 use cargo::core::package_id::PackageId;
 use cargo::core::summary::Summary;
-use cargo::core::source::QueryKind;
+use cargo::sources::source::QueryKind;
 use cargo::util::errors::CargoResult;
 use semver::VersionReq;
 
