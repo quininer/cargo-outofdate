@@ -8,6 +8,7 @@ use cargo::core::Workspace;
 use cargo::core::registry::PackageRegistry;
 use cargo::util::Config as CargoConfig;
 use cargo::util::errors::CargoResult;
+use cargo::util::cache_lock::CacheLockMode;
 use cargo::util::important_paths::find_root_manifest_for_wd;
 use tabwriter::TabWriter;
 use argh::FromArgs;
@@ -50,7 +51,7 @@ fn start(options: Options) -> CargoResult<()> {
         &[],
         &[]
     )?;
-    let _guard = config.acquire_package_cache_lock()?;
+    let _guard = config.acquire_package_cache_lock(CacheLockMode::DownloadExclusive)?;
 
     let workspace = {
         let manifest_path = if let Some(manifest) = options.manifest.as_ref() {

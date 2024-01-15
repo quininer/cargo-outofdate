@@ -14,7 +14,7 @@ edition = "2018"
 [dependencies]
 anyhow = "1"
 argh = "0.1"
-cargo = { version = "0.75", default-features = false }
+cargo = { version = "0.76", default-features = false }
 semver = "1"
 tabwriter = "1.0"
 
