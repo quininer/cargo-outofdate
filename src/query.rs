@@ -21,11 +21,13 @@ pub fn query_latest(registry: &mut PackageRegistry, package: &PackageId)
     let package_version = VersionReq::parse(&package.version().to_string())?;
 
     let compatible_latest = results.iter()
+        .map(|summary| summary.as_summary())
         .filter(|summary| package_version.matches(summary.version()))
         .max_by_key(|summary| summary.version())
         .filter(|summary| summary.version() > package.version())
         .cloned();
     let latest = results.iter()
+        .map(|summary| summary.as_summary())
         .max_by_key(|summary| summary.version())
         .filter(|summary| summary.version() > package.version())
         .filter(|summary| Some(*summary) != compatible_latest.as_ref())
