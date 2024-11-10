@@ -5,8 +5,7 @@ use std::borrow::Cow;
 use std::io::{ self, Write };
 use cargo::ops;
 use cargo::core::Workspace;
-use cargo::core::registry::PackageRegistry;
-use cargo::util::Config as CargoConfig;
+use cargo::util::context::GlobalContext;
 use cargo::util::errors::CargoResult;
 use cargo::util::cache_lock::CacheLockMode;
 use cargo::util::important_paths::find_root_manifest_for_wd;
@@ -39,8 +38,8 @@ struct Options {
 
 #[inline]
 fn start(options: Options) -> CargoResult<()> {
-    let mut config = CargoConfig::default()?;
-    config.configure(
+    let mut ctx = GlobalContext::default()?;
+    ctx.configure(
         1,
         false,
         None,
@@ -51,21 +50,21 @@ fn start(options: Options) -> CargoResult<()> {
         &[],
         &[]
     )?;
-    let _guard = config.acquire_package_cache_lock(CacheLockMode::DownloadExclusive)?;
+    let _guard = ctx.acquire_package_cache_lock(CacheLockMode::DownloadExclusive)?;
 
     let workspace = {
         let manifest_path = if let Some(manifest) = options.manifest.as_ref() {
             Path::new(manifest).canonicalize()?
         } else {
-            find_root_manifest_for_wd(config.cwd())?
+            find_root_manifest_for_wd(ctx.cwd())?
         };
-        Workspace::new(&manifest_path, &config)?
+        Workspace::new(&manifest_path, &ctx)?
     };
 
-    let mut registry = PackageRegistry::new(&config)?;
+    let mut registry = workspace.package_registry()?;
     registry.lock_patches();
 
-    let (_, resolve) = ops::resolve_ws(&workspace)?;
+    let (_, resolve) = ops::resolve_ws(&workspace, true)?;
 
     let packages = if options.only_root {
         Some(workspace
@@ -96,7 +95,7 @@ fn start(options: Options) -> CargoResult<()> {
     }
 
     if results.is_empty() {
-        config.shell()
+        ctx.shell()
             .status("Ok", "All dependencies are up to date, yay!")?;
     } else {
         results.sort_by_key(|&(pkg, _, _)| pkg);
